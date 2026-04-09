@@ -1,52 +1,113 @@
--- An example init.lua for waywall using plug.waywall.
--- You can modify it to your liking.
-local waywall = require("waywall")
-local helpers = require("waywall.helpers")
+local log = require("plug.log")
+local plugin = require("plug.plugin")
+local utils = require("plug.utils")
+local globals = require("plug.globals")
 
--- Rest of config from here
-local config = {
-	input = {},
-	theme = {},
-	experimental = {},
-	actions = {},
-}
+local M = {}
 
-local plug = require("plug.init")
-plug.setup({
-	-- Use a custom directory for plugins with each .lua returning a plugin spec.
-	-- This setting is relative to the .config directory.
-	-- Eg: This would search for plugins in ~/.config/waywall/plugins.
-	dir = "plugins",
-	config = config,
-	path = "~/.local/waywall", -- Optional, set to override the path plugins are installed in (default is ~/.config/waywall)
+--- @type Logger
+Log = log.Logger:new()
 
-	-- Or specify a list of plugin specs.
-	-- plugins = {
-	-- 	{
-	--    -- 	Set source URL for the plugin
-	-- 		url = "https://example.com/author/sample",
-	-- 		name = "sample", -- Optional name for the plugin
-	-- 		config = function(config) -- `config` is the waywall config table.
-	--      -- See sample/init.lua for an example plugin
-	-- 			print(require("sample.init").loaded)
-	-- 		end,
-	-- 		enabled = false, -- Optional, set to true to enable the plugin
-	-- 		dependencies = {
-	--      -- Optional, list of plugin specs that this plugin depends on
-	-- 		}
-	-- 		update_on_load = false, -- Optional, set to true to update the plugin on load
-	-- 	},
-	-- },
-})
+--- @param dir string
+--- @param config table<any, any>
+local function __setup_dir(dir, config)
+	local command = 'ls -a "' .. globals.WAYWALL_CONFIG_DIR .. dir .. '"'
+	local handle = io.popen(command)
+	if not handle then
+		Log:error("setup dir failed: popen failed")
+		return
+	end
+	for filename in handle:lines() do
+		if filename == "." or filename == ".." then
+			goto continue
+		end
+		if filename:sub(-#".lua") ~= ".lua" then
+			Log:debug("setup dir: skip non lua file")
+			goto continue
+		end
+		--- @type table<string, any> | nil
+		filename = filename:sub(0, -#".lua" - 1)
+		Log:debug("setup dir: load spec: " .. dir .. "." .. filename)
+		local spec, err = utils.Prequire(dir .. "." .. filename)
+		if not spec then
+			Log:error("setup dir: failed to load spec: " .. err)
+			goto continue
+		end
+		local pspec, err2 = plugin.load_from_spec(spec, config)
+		if err2 then
+			Log:error("setup dir: failed to load plugin: " .. err2)
+			goto continue
+		end
+		Log:debug("setup dir: loaded plugin: " .. pspec.name)
+		::continue::
+	end
+end
 
--- Update plugin with name "<name>"
--- Returns true if successful, false otherwise.
--- You can set it to a keybind through waywall.
-local success = plug.update({ name = "<name>" })
+--- @param plugins table<string, any>[]
+--- @param config table<any, any>
+local function __setup_plugins(plugins, config)
+	for _, spec in ipairs(plugins) do
+		local pspec, err = plugin.load_from_spec(spec, config)
+		if err then
+			Log:error("setup plugins: failed to load plugin: " .. err)
+			goto continue
+		end
+		Log:debug("setup plugins: loaded plugin: " .. pspec.name)
+		::continue::
+	end
+end
 
--- Update all plugins
--- Returns true if successful, false otherwise.
--- You can also set it to a keybind through waywall.
-local success_all = plug.update_all()
+--- @param opts SetupOpts
+function M.setup(opts)
+	Log:debug("setup start")
+	if opts.path then
+		Log:debug("setup path")
+		local path = utils.Normalize_path(opts.path)
+		globals.PLUG_CONFIG_DIR = path
+		package.path = package.path .. ";" .. path .. "?.lua"
+	end
+	if opts.dir then
+		Log:debug("setup dir")
+		__setup_dir(opts.dir, opts.config)
+	elseif opts.plugins then
+		Log:debug("setup plugins")
+		__setup_plugins(opts.plugins, opts.config)
+	else
+		Log:error("setup failed: no dir or plugins")
+	end
+	Log:debug("setup end")
+end
 
-return config
+--- @param opts UpdateOpts
+--- @return boolean
+function M.update(opts)
+	Log:debug("update start")
+	if not opts.name then
+		Log:error("update failed: no name")
+		return false
+	end
+
+	local success, err = plugin.update_from_name(opts.name)
+	if not success then
+		Log:error("update failed: " .. err)
+		return false
+	end
+
+	Log:debug("update end")
+	return true
+end
+
+--- @return boolean
+function M.update_all()
+	Log:debug("update all start")
+	local success, err = plugin.update_all()
+	if not success then
+		Log:error("update all failed: " .. err)
+		return false
+	end
+
+	Log:debug("update all end")
+	return true
+end
+
+return M
