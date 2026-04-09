@@ -7,21 +7,12 @@ A simple plugin manager for waywall.
 - git
 - [waywall](https://github.com/tesselslate/waywall)
 
-## Backup any existing waywall config
-```sh
-mv ~/.config/waywall ~/.config/waywall.bak
-```
-
 ## Clone plug.waywall
 ```sh
-git clone https://github.com/its-saanvi/plug.waywall.git ~/.config/waywall/
+git clone https://github.com/its-saanvi/plug.waywall.git ~/.config/waywall/plug
 ```
 
-## Copy back your waywall config into ~/.config/waywall/init.lua
-```sh
-cp ~/.config/waywall.bak/init.lua ~/.config/waywall/init.lua
-```
-Or, if you do not have an existing config, you can use the `init.lua` already cloned in `~/.config/waywall` and modify it to your liking.
+If you do not have an existing config, you can use the `example.lua` already cloned in `~/.config/waywall/plug` and modify it to your liking.
 
 # Usage
 ## Plugin Configuration
@@ -70,7 +61,7 @@ local success = plug.update({ name = "<name>" })
 local success_all = plug.update_all()
 ```
 See [plug.sample](./sample/init.lua) for an example plugin.
-See [init.lua](./init.lua) for an example waywall config with plug.waywall.
+See [example.lua](./example.lua) for an example waywall config with plug.waywall.
 
 # License
 [GNU GPL v2](./LICENSE)
