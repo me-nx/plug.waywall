@@ -60,12 +60,12 @@ end
 --- @param opts SetupOpts
 function M.setup(opts)
 	Log:debug("setup start")
-	if opts.path then
-		Log:debug("setup path")
-		local path = utils.Normalize_path(opts.path)
-		globals.PLUG_CONFIG_DIR = path
-		package.path = package.path .. ";" .. path .. "?.lua"
-	end
+
+	local path = utils.Normalize_path(opts.path or globals.PLUG_CONFIG_DIR)
+	Log:debug("plugins path: '" ..  "'")
+	globals.PLUG_CONFIG_DIR = path
+	package.path = package.path .. ";" .. path .. "?.lua"
+
 	if opts.dir then
 		Log:debug("setup dir")
 		__setup_dir(opts.dir, opts.config)
