@@ -45,7 +45,7 @@ plug.setup({
 	-- Eg: This would search for plugins in ~/.config/waywall/plugins.
 	dir = "plugins",
 	config = config,
-	path = "~/.local/waywall", -- Optional, set to override the path plugins are installed in (default is ~/.config/waywall)
+	path = "~/.local/share/waywall/plug", -- Optional, set to override the path plugins are installed in (default is ~/.local/state/waywall/plug/)
 	log_level = "debug", -- Optional, set to override the log level (default is info)
 
 	-- Or specify a list of plugin specs.
